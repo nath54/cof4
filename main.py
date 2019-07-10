@@ -13,6 +13,9 @@ pygame.display.set_caption(TITRE)
 def rx(x): return int(x/btex*tex)
 def ry(y): return int(y/btey*tey)
 
+dim="images/"
+dimp="images/persos.png"
+
 font1=pygame.font.SyFont("Arial",ry(17))
 font2=pygame.font.SyFont("Arial",ry(20))
 font3=pygame.font.SyFont("Arial",ry(25))
@@ -35,6 +38,7 @@ class Arme:
 		self.proj_lourd=arm[4]
 		self.images=arm[5]
 		self.hitboxs=arm[6]
+		self.projs=[]
 		self.sens=0
 		self.pos=pos
     def att(self,tpatt,persos):
