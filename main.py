@@ -41,7 +41,7 @@ def ry(y): return int(y/btey*tey)
 dim="images/"
 dimp="images/persos/"
 
-fondmapes=[pygame.transform.scale(pygame.image.load(dim+"fondmape1.png"),[tex,tey]),pygame.transform.scale(pygame.image.load(dim+"fondmape2.png"),[tex,tey])]
+fondmapes=[pygame.transform.scale(pygame.image.load(dim+"fondmape1.png"),[tex,tey]) ] #,pygame.transform.scale(pygame.image.load(dim+"fondmape2.png"),[tex,tey])]
 
 font1=pygame.font.SysFont("Arial",ry(17))
 font2=pygame.font.SysFont("Arial",ry(20))
@@ -65,11 +65,11 @@ class Mape:
         self.recthaut=pygame.Rect(self.px+self.tx*0.01,self.py,self.tx*0.98,self.ty*0.01)
         self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
         self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
-
+        self.rectbas=pygame.Rect(self.px,self.py+self.ty*0.99,self.tx,self.ty*0.01)
 
 
 armes=[]
-armes.append([])
+armes.append(["poing",20,50,5,10,None,None,0.2,0.5,0.15,0.2])
 #0=nom 1=dg att legere 2=dg att lourde 3=projection att legere 4=projection att lourde
 #5=images 6=hitboxs 7=tpatt legere 8=tp att lourde
 #9=dur att leg 10=dur att lourde
@@ -83,7 +83,7 @@ class Arme:
         self.proj_leg=arm[3]
         self.proj_lourd=arm[4]
         self.images=arm[5]
-        self.hitboxs=arm[6]
+        self.hitboxs=[[],[],[],[],[],[],[],[]]
         self.projs=[]
         self.sens=0
         self.pos=pos
@@ -98,9 +98,9 @@ class Arme:
         
 
 persos=[]
-persos.append(["stickman","p1",1000,2,5,0.8,50,3,2])
+persos.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
 
-#0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive
+#0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive 9=arme1 10=arme2
 
 def load_imgs(nim):
     imgs=[]
@@ -174,6 +174,9 @@ class Perso:
         self.djmp=time.time()
         self.tjmp=0.2
         self.mort=False
+        self.arme_base=Arme(0,self)
+        self.arme1=Arme(pp[10],self)
+        self.arme2=Arme(pp[9],self)
     def bouger(self,aa):
         if not self.mort:
             if aa=="left":
@@ -184,7 +187,7 @@ class Perso:
                     self.an=0
                     self.img=self.anim[self.an]
                     self.dan=time.time()
-                    self.isenlair=True
+                self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             if aa=="right":
                 self.vitx+=self.acc
@@ -194,7 +197,7 @@ class Perso:
                     self.an=0
                     self.img=self.anim[self.an]
                     self.dan=time.time()
-                    self.isenlair=True
+                self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             elif aa=="down":
                 self.vity+=self.acc
@@ -204,7 +207,7 @@ class Perso:
                     self.an=0
                     self.img=self.anim[self.an]
                     self.dan=time.time()
-                    self.isenlair=True
+                self.isenlair=True
                 self.isacroupi=True
     def sauter(self):
         if not self.mort:
@@ -217,7 +220,7 @@ class Perso:
                     self.an=0
                     self.img=self.anim[self.an]
                     self.dan=time.time()
-                    self.isenlair=True
+                self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
     def esquive(self):
         if not self.mort:
@@ -234,7 +237,27 @@ class Perso:
                     self.nbsaut+=1
     def attaque_legere(self,persos):
         if not self.mort:
-            pass
+            if self.issenshaut:
+                if self.issensgauche:
+                    self.anim=self.imgs[10]
+                elif self.issensdroite:
+                    self.anim=self.imgs[9]
+                else:
+                    self.anim=self.imgs[12]
+            elif self.issensbas:
+                if self.issensgauche:
+                    self.anim=self.imgs[8]
+                elif self.issensdroite:
+                    self.anim=self.imgs[7]
+                else:
+                    self.anim=self.imgs[11]
+            elif self.issensgauche:
+                self.anim=self.imgs[6]
+            elif self.issensdroite:
+                self.anim=self.imgs[5]
+            self.an=0
+            self.img=self.anim[self.an]
+            self.dan=time.time()
     def attaque_lourde(self,persos):
         if not self.mort:
             pass
@@ -268,17 +291,21 @@ class Perso:
                 for m in mape:
                     if self.rect.colliderect(m.rect):
                         h=True
-                        if self.rect.colliderect(m.recthaut):
+                        if not self.rect.colliderect(m.rectbas):
+                            if self.rect.colliderect(m.recthaut):
+                                self.py-=self.vity
+                                h=False
+                            if self.rect.colliderect(m.rectgauche):
+                                self.px-=self.vitx
+                                if h: self.anim,self.an=self.imgs[15],0
+                            if self.rect.colliderect(m.rectdroite):
+                                self.px-=self.vitx
+                                if h: self.anim,self.an=self.imgs[16],0
+                            self.nbsaut=self.nbsaut_tot
+                            self.isenlair=False   
+                        else:
+                            self.px-=self.vitx
                             self.py-=self.vity
-                            h=False
-                        if self.rect.colliderect(m.rectgauche):
-                            self.px-=self.vitx
-                            if h: self.anim,self.an=self.imgs[15],0
-                        if self.rect.colliderect(m.rectdroite):
-                            self.px-=self.vitx
-                            if h: self.anim,self.an=self.imgs[16],0
-                        self.nbsaut=self.nbsaut_tot
-                        self.isenlair=False   
                 if self.vitx >= self.decc: self.vitx-=self.decc
                 if self.vitx <= -self.decc: self.vitx+=self.decc
                 if self.vity >= self.decc: self.vity-=self.decc
