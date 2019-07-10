@@ -179,7 +179,7 @@ class Perso:
             if aa=="left":
                 self.vitx-=self.acc
                 if self.vitx<-self.vit_max: self.vitx=-self.vit_max
-                if self.anim!=self.imgs[2]:
+                if self.anim!=self.imgs[2] and not self.anim in [self.imgs[15]]:
                     self.anim=self.imgs[2]
                     self.an=0
                     self.img=self.anim[self.an]
@@ -189,7 +189,7 @@ class Perso:
             if aa=="right":
                 self.vitx+=self.acc
                 if self.vitx>self.vit_max: self.vitx=self.vit_max
-                if self.anim!=self.imgs[1]:
+                if self.anim!=self.imgs[1] and not self.anim in [self.imgs[16]]:
                     self.anim=self.imgs[1]
                     self.an=0
                     self.img=self.anim[self.an]
