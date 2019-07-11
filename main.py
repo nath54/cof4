@@ -1,5 +1,5 @@
 #coding:utf-8
-import random,pygame,time
+import random,pygame,time,math
 from pygame.locals import *
 
 TITRE="Clash Of Fighters 4"
@@ -12,22 +12,22 @@ fenetre=pygame.display.set_mode([tex,tey],pygame.FULLSCREEN|pygame.HWSURFACE|pyg
 pygame.display.set_caption(TITRE)
 
 strings=(
-"        X       ",
+"        .       ",
+"       ...      ",
+"       ...      ",
+"       ...      ",
+"       ...      ",
+"       ...      ",
+"       ...      ",
+"       ...      ",
+"      .....     ",
+"      .....     ",
+"   XXXXXXXXXXX  ",
+"  X...........X ",
+"   XXXXXXXXXXX  ",
 "       X.X      ",
-"      X...X     ",
-"     X...X      ",
-"     X...X      ",
-"    X...X       ",
-"   X...X        ",
-"   X...X        ",
-"  X...X         ",
-" XXXXXXXX       ",
-"X........X      ",
-" XXXXXXXX       ",
-"  X..X          ",
-" X..X           ",
-"X..X            ",
-" XX             "
+"       X.X      ",
+"        X       "
 )
 
 
@@ -66,35 +66,87 @@ class Mape:
         self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
         self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
         self.rectbas=pygame.Rect(self.px,self.py+self.ty*0.99,self.tx,self.ty*0.01)
+        
+xt=int(txb/2)
+yt=int(tyb/2)
 
+hitbox_poings=[[-xt,-tyb,txb,tyb],[-xt,tyb,txb,tyb],[0,-yt,txb,tyb],[-txb,-yt,txb,tyb]]
+#0=haut 1=bas 2=droite 3=gauche
+#xx+h[0] , yy+h[1] , h[2] , h[3]
 
 armes=[]
-armes.append(["poing",20,50,5,10,None,None,0.2,0.5,0.15,0.2])
+armes.append(["poing",20,50,5,10,None,hitbox_poings,0.2,0.5,0.15,0.2])
 #0=nom 1=dg att legere 2=dg att lourde 3=projection att legere 4=projection att lourde
 #5=images 6=hitboxs 7=tpatt legere 8=tp att lourde
 #9=dur att leg 10=dur att lourde
+
+def dist(p1,p2): return int(math.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2))
+
+aproj=8
 
 class Arme:
     def __init__(self,tp,pos):
         arm=armes[tp]
         self.nom=arm[0]
         self.dg_leg=arm[1]
-        sdlf.dg_lourd=arm[2]
+        self.dg_lourd=arm[2]
         self.proj_leg=arm[3]
         self.proj_lourd=arm[4]
         self.images=arm[5]
-        self.hitboxs=[[],[],[],[],[],[],[],[]]
+        self.hitbox_att=arm[6]
         self.projs=[]
         self.sens=0
         self.pos=pos
+        self.imgs=[[None],[None],[None],[None],[None],[None]]
+        self.anims=self.imgs[0]
+        self.an=0
+        self.img=self.anims[self.an]
+        self.datt_leg=time.time()
+        self.datt_lourd=time.time()
+        self.tatt_leg=arm[7]
+        self.tatt_lourd=arm[8]
+        self.dur_att_leg=arm[9]
+        self.dur_att_lourd=arm[10]
     def att(self,tpatt,persos):
-        hr=pygame.Rect(self.pos.px+self.hitboxs[self.sens][0],self.pos.py+self.hitboxs[self.sens][1],self.hitboxs[self.sens][2],self.hitboxs[self.sens][3])
+        xx=self.pos.px+self.pos.tx/2
+        yy=self.pos.py+self.pos.ty/2
         for p in persos:
-            if p!=self.pos and p.rect.colliderect(hr):
-                if self.tpatt==0: #legere
+            if p!=self.pos:
+                touche=False
+                if self.pos.issenshaut:
+                    hb=pygame.Rect(xx+self.hitbox_att[0][0],yy+self.hitbox_att[0][1],self.hitbox_att[0][2],self.hitbox_att[0][3])
+                    if hb.colliderect(p.rect): touche=True
+                if self.pos.issensbas and p.rect.colliderect(self.hitbox_att[1]):
+                    hb=pygame.Rect(xx+self.hitbox_att[1][0],yy+self.hitbox_att[1][1],self.hitbox_att[1][2],self.hitbox_att[1][3])
+                    if hb.colliderect(p.rect): touche=True
+                if self.pos.issensdroite and p.rect.colliderect(self.hitbox_att[2]):
+                    hb=pygame.Rect(xx+self.hitbox_att[2][0],yy+self.hitbox_att[2][1],self.hitbox_att[2][2],self.hitbox_att[2][3])
+                    if hb.colliderect(p.rect): touche=True
+                if self.pos.issensgauche and p.rect.colliderect(self.hitbox_att[3]):
+                    hb=pygame.Rect(xx+self.hitbox_att[3][0],yy+self.hitbox_att[3][1],self.hitbox_att[3][2],self.hitbox_att[3][3])
+                    if hb.colliderect(p.rect): touche=True
+                if touche and not p.isesquive and not p.inv and tpatt==0: #att legere
                     p.vie-=self.dg_leg
-                    p.px+=0
-                    p.py+=0
+                    p.vitx,p.vity=0,0
+                    p.isenlair=True
+                    if self.pos.issenshaut: p.vity-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensbas: p.vity+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensgauche: p.vitx-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensdroite: p.vitx+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                    p.dtch=self.pos
+                    p.dtpdtch=time.time()
+                elif touche and not p.isesquive and not p.inv and tpatt==1: #att legere
+                    p.vie-=self.dg_lourd
+                    p.vitx,p.vity=0,0
+                    p.isenlair=True
+                    if self.pos.issenshaut: p.vity-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensbas: p.vity+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensgauche: p.vitx-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                    if self.pos.issensdroite: p.vitx+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                    p.dtch=self.pos
+                    p.dtpdtch=time.time()
+                    
+                    
         
 
 persos=[]
@@ -127,8 +179,9 @@ def load_imgs(nim):
     return imgs
 
 class Perso:
-    def __init__(self,x,y,tp,keys):
+    def __init__(self,x,y,tp,keys,isbot):
         pp=persos[tp]
+        self.isbot=isbot
         self.px=x
         self.py=y
         self.tx=txb
@@ -155,7 +208,7 @@ class Perso:
         self.dan=time.time()
         self.tan=0.1
         self.issenshaut=True
-        self.isensbas=False
+        self.issensbas=False
         self.issensdroite=False
         self.issensgauche=False
         self.inv=True
@@ -169,7 +222,7 @@ class Perso:
         self.isesquive=False
         self.isenlair=True
         self.desq=time.time()
-        self.duresq=0.4
+        self.duresq=0.7
         self.keys=keys
         self.djmp=time.time()
         self.tjmp=0.2
@@ -177,9 +230,15 @@ class Perso:
         self.arme_base=Arme(0,self)
         self.arme1=Arme(pp[10],self)
         self.arme2=Arme(pp[9],self)
+        self.arme_actu=self.arme_base
+        self.isimobilise=False
+        self.points=0
+        self.dtch=None
+        self.dtpdtch=time.time()
     def bouger(self,aa):
         if not self.mort:
             if aa=="left":
+                self.issensgauche=True
                 self.vitx-=self.acc
                 if self.vitx<-self.vit_max: self.vitx=-self.vit_max
                 if self.anim!=self.imgs[2] and not self.anim in [self.imgs[15]]:
@@ -190,6 +249,7 @@ class Perso:
                 self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             if aa=="right":
+                self.issensdroite=True
                 self.vitx+=self.acc
                 if self.vitx>self.vit_max: self.vitx=self.vit_max
                 if self.anim!=self.imgs[1] and not self.anim in [self.imgs[16]]:
@@ -200,6 +260,7 @@ class Perso:
                 self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             elif aa=="down":
+                self.issensbas=True
                 self.vity+=self.acc
                 if self.vity>self.vit_max: self.vity=self.vit_max
                 if self.anim!=self.imgs[4]:
@@ -236,7 +297,8 @@ class Perso:
                 if self.isenlair and self.nbsaut < self.nbsaut_tot:
                     self.nbsaut+=1
     def attaque_legere(self,persos):
-        if not self.mort:
+        if not self.mort and time.time()-self.arme_actu.datt_leg>=self.arme_actu.tatt_leg:
+            self.arme_actu.datt_leg=time.time()
             if self.issenshaut:
                 if self.issensgauche:
                     self.anim=self.imgs[10]
@@ -258,9 +320,32 @@ class Perso:
             self.an=0
             self.img=self.anim[self.an]
             self.dan=time.time()
+            self.arme_actu.att(0,persos)
     def attaque_lourde(self,persos):
-        if not self.mort:
-            pass
+        if not self.mort and time.time()-self.arme_actu.datt_lourd>=self.arme_actu.tatt_lourd:
+            self.arme_actu.datt_lourd=time.time()
+            if self.issenshaut:
+                if self.issensgauche:
+                    self.anim=self.imgs[10]
+                elif self.issensdroite:
+                    self.anim=self.imgs[9]
+                else:
+                    self.anim=self.imgs[12]
+            elif self.issensbas:
+                if self.issensgauche:
+                    self.anim=self.imgs[8]
+                elif self.issensdroite:
+                    self.anim=self.imgs[7]
+                else:
+                    self.anim=self.imgs[11]
+            elif self.issensgauche:
+                self.anim=self.imgs[6]
+            elif self.issensdroite:
+                self.anim=self.imgs[5]
+            self.an=0
+            self.img=self.anim[self.an]
+            self.dan=time.time()
+            self.arme_actu.att(1,persos)
     def update(self,mape):
         if not self.mort:
             if time.time()-self.dan>=self.tan:
@@ -278,7 +363,7 @@ class Perso:
                 if time.time()-self.dapp>=self.tapp:
                     self.dapp=time.time()
                     self.app=not self.app
-            if time.time()-self.dbg >= self.tbg:
+            if time.time()-self.dbg >= self.tbg and not self.isimobilise:
                 self.dbg=time.time()
                 if self.isenlair and not self.isesquive and self.vity < self.vit_max*0.8: self.vity+=2.5
                 self.px+=self.vitx
@@ -287,6 +372,7 @@ class Perso:
                     self.mort=True
                     self.vie=0
                 if self.px<=-tex or self.px>=tex*2: self.mort=True
+                if self.py<=-1.0*tey: self.mort=True
                 self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
                 for m in mape:
                     if self.rect.colliderect(m.rect):
@@ -303,7 +389,7 @@ class Perso:
                                 if h: self.anim,self.an=self.imgs[16],0
                             self.nbsaut=self.nbsaut_tot
                             self.isenlair=False   
-                        else:
+                        if self.rect.colliderect(m.rectbas):
                             self.px-=self.vitx
                             self.py-=self.vity
                 if self.vitx >= self.decc: self.vitx-=self.decc
@@ -326,51 +412,101 @@ class Perso:
 def verif_keys(persos):
     key=pygame.key.get_pressed()
     for p in persos:
-        p.issenshaut=True
-        p.issensbas=False
-        p.issensgauche=False
-        p.issensdroite=False
-        isatt=False
-        isesq=False
-        if key[p.keys[0]]: #up
-            p.issenshaut=True
-        if key[p.keys[1]]: #down
-            p.issensbas=True
-        if key[p.keys[2]]: #left
-            p.issensgauche=True
-        if key[p.keys[3]]: #right
-            p.issensdroite=True
-        if key[p.keys[4]]: #sauter
-            p.sauter()
-        if key[p.keys[5]]: #attaque legere
-            p.attaque_legere(persos)
-            isatt=True
-        if key[p.keys[6]]: #attaque lourde
-            p.attaque_lourde(persos)
-            isatt=True
-        if key[p.keys[7]]: #esquive
-            p.esquive()
-            isesq=True
-        if not isesq and not isatt:
+        if not p.isbot:
+            p.issenshaut=False
+            p.issensbas=False
+            p.issensgauche=False
+            p.issensdroite=False
+            isatt=False
+            isesq=False
             if key[p.keys[0]]: #up
-                p.bouger("up")
+                p.issenshaut=True
             if key[p.keys[1]]: #down
-                p.bouger("down")
+                p.issensbas=True
             if key[p.keys[2]]: #left
-                p.bouger("left")
+                p.issensgauche=True
             if key[p.keys[3]]: #right
-                p.bouger("right")
+                p.issensdroite=True
+            if key[p.keys[4]]: #sauter
+                p.sauter()
+            if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
+            if key[p.keys[5]]: #attaque legere
+                p.attaque_legere(persos)
+                isatt=True
+            if key[p.keys[6]]: #attaque lourde
+                p.attaque_lourde(persos)
+                isatt=True
+            if key[p.keys[7]]: #esquive
+                p.esquive()
+                isesq=True
+            if not isesq and not isatt:
+                if key[p.keys[0]]: #up
+                    p.bouger("up")
+                if key[p.keys[1]]: #down
+                    p.bouger("down")
+                if key[p.keys[2]]: #left
+                    p.bouger("left")
+                if key[p.keys[3]]: #right
+                    p.bouger("right")
+            
     return persos
         
         
+diff=100
+def bot(persos):
+    for p in persos:
+        if p.isbot and not p.mort and random.randint(1,diff)==1:
+            p.issenshaut=False
+            p.issensbas=False
+            p.issensgauche=False
+            p.issensdroite=False
+            bgv=0
+            bgh=0
+            att=0
+            esquive=0
+            for pp in persos:
+                if p!=pp:
+                    if p.px+p.tx/2>pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=-1
+                    if p.px+p.tx/2<pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=1
+                    if p.py+p.ty/2>pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=-1
+                    if p.py+p.ty/2<pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=1
+                    if (time.time()-pp.arme_actu.datt_leg<=0.5) or (time.time()-pp.arme_actu.datt_lourd<=0.5): esquive=1
+                    if time.time()-p.arme_actu.datt_leg>=p.arme_actu.tatt_leg and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=1
+                    if time.time()-p.arme_actu.datt_lourd>=p.arme_actu.tatt_lourd and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=2
+            if att==0:
+                if bgv==-1: p.sauter()
+                if bgv==1: p.bouger("down")
+                if bgh==-1: p.bouger("left")
+                if bgh==1: p.bouger("right")
+                if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
+                if esquive==1: p.esquive()
+            else:
+                if bgv==-1: p.issenshaut=True
+                if bgv==1: p.issensbas=True
+                if bgh==-1: p.issensgauche=True
+                if bgh==1: p.issensdroite=True
+                if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
+                if att==1:
+                    p.attaque_legere(persos)
+                elif att==2:
+                    p.attaque_lourde(persos)
+            
+            
+            
+    
 
 def aff_jeu(pause,persos,mape,cam,fondmape,fps):
     bts=[]
     for x in range(6): bts.append(None)
     fenetre.blit(fondmape,[0,0])
+    #fenetre.fill((200,200,150))
     if not pause:
         for m in mape:
             pygame.draw.rect( fenetre , m.cl , ( cam[0]+m.px , cam[1]+m.py , m.tx , m.ty ) , 0)
+            pygame.draw.rect( fenetre , (1,1,1) , (cam[0]+m.px+m.tx*0.01,cam[1]+m.py,m.tx*0.98,m.ty*0.01) , 2)
+            pygame.draw.rect( fenetre , (1,1,1) , (cam[0]+m.px,cam[1]+m.py+m.ty*0.01,m.tx*0.01,m.ty*0.98) , 2)
+            pygame.draw.rect( fenetre , (1,1,1) , (cam[0]+m.px+m.tx*0.99,cam[1]+m.py+m.ty*0.01,m.tx*0.01,m.ty*0.98) , 2)
+            pygame.draw.rect( fenetre , (1,1,1) , (cam[0]+m.px,cam[1]+m.py+m.ty*0.99,m.tx,m.ty*0.01) , 2)
         xx,yy=rx(100),ry(25)
         for p in persos:
             if ( p.inv and not p.app ): pass
@@ -380,8 +516,12 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps):
                 fenetre.blit( p.img , [cam[0]+p.px,cam[1]+p.py] )
             fenetre.blit( p.imgs[14][0] , [xx,yy] )
             pygame.draw.rect( fenetre , (0,0,0) , (xx,yy,txb,tyb) , 2 )
-            pygame.draw.rect( fenetre , (int(p.vie/p.vie_tot*255.),0,0) , (xx,yy+tyb+ry(5),int(p.vie/p.vie_tot*txb),ry(7)) , 0 )
+            if p.vie>=0:
+                pygame.draw.rect( fenetre , (int(p.vie/p.vie_tot*255.),0,0) , (xx,yy+tyb+ry(5),int(p.vie/p.vie_tot*txb),ry(7)) , 0 )
             pygame.draw.rect( fenetre , (0,0,0) , (xx,yy+tyb+ry(5),txb,ry(7)) , 2 )
+            pygame.draw.rect( fenetre , (255,255,255) , (xx+txb+rx(5),yy+tyb-ry(5),rx(20),ry(20)) , 0 )
+            pygame.draw.rect( fenetre , (0,0,0) , (xx+txb+rx(5),yy+tyb-ry(5),rx(20),ry(20)) , 1 )
+            fenetre.blit( font1.render(str(p.points),20,(0,0,0)) , [xx+txb+rx(7),yy+tyb-ry(3)] )
             xx+=rx(150)
     else:
         pygame.draw.rect(fenetre,(25,105,150),( rx(50),ry(50),rx(500),ry(924) ),0)
@@ -400,13 +540,15 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps):
 
 
 def main_jeu(nbpersos):
-    spawnpoints=[[rx(500),ry(50)]]
+    spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     persos=[]
-    k=[[K_UP,K_DOWN,K_LEFT,K_RIGHT,K_KP0,K_KP1,K_KP2,K_KP3,K_KP4]]
+    k=[[K_UP,K_DOWN,K_LEFT,K_RIGHT,K_KP0,K_KP1,K_KP2,K_KP3,K_KP4],None]
+    bt=[False,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
-        persos.append( Perso(sp[0],sp[1],0,k[x]) )
+        persos.append( Perso(sp[0],sp[1],0,k[x],bt[x]) )
+    spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     pause=False
     encour=True
     cam=[0,0]
@@ -421,8 +563,25 @@ def main_jeu(nbpersos):
         t1=time.time()
         bts=aff_jeu(pause,persos,mape,cam,fondmape,fps)
         verif_keys(persos)
+        bot(persos)
         for p in persos:
             p.update(mape)
+        for p in persos:
+            if p.mort:
+                if p.dtch!=None and time.time()-p.dtpdtch<=10:
+                    p.dtch.points+=2
+                else: p.points-=2
+                p.points-=1
+                sp=random.choice(spawnpoints)
+                p.vie=p.vie_tot
+                p.isenlair=True
+                p.inv=True
+                p.dinv=time.time()
+                p.px=sp[0]
+                p.py=sp[1]
+                p.dtch=None
+                p.mort=False
+                
         for event in pygame.event.get():
             if event.type==QUIT: exit()
             elif event.type==KEYDOWN:
@@ -475,5 +634,5 @@ def main():
             elif event.type==MOUSEBUTTONUP:
                 pass
 
-main_jeu(1)
+main_jeu(2)
 
