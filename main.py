@@ -1,4 +1,5 @@
 #coding:utf-8
+#!/bin/python3
 import random,pygame,time,math
 from pygame.locals import *
 
@@ -10,6 +11,15 @@ io = pygame.display.Info()
 tex,tey=io.current_w,io.current_h
 fenetre=pygame.display.set_mode([tex,tey],pygame.FULLSCREEN|pygame.HWSURFACE|pygame.DOUBLEBUF)
 pygame.display.set_caption(TITRE)
+
+import pygame
+from pygame.locals import *
+
+mon_joystick="joystick"
+nb_joysticks = pygame.joystick.get_count()
+if nb_joysticks > 0:
+	mon_joystick = pygame.joystick.Joystick(0)
+	mon_joystick.init()
 
 strings=(
 "        .       ",
@@ -127,6 +137,7 @@ class Arme:
                     if hb.colliderect(p.rect): touche=True
                 if touche and not p.isesquive and not p.inv and tpatt==0: #att legere
                     p.vie-=self.dg_leg
+                    if p.vie<=0: p.vie=1
                     p.vitx,p.vity=0,0
                     p.isenlair=True
                     if self.pos.issenshaut: p.vity-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
@@ -137,6 +148,7 @@ class Arme:
                     p.dtpdtch=time.time()
                 elif touche and not p.isesquive and not p.inv and tpatt==1: #att legere
                     p.vie-=self.dg_lourd
+                    if p.vie<=0: p.vie=1
                     p.vitx,p.vity=0,0
                     p.isenlair=True
                     if self.pos.issenshaut: p.vity-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
@@ -151,6 +163,8 @@ class Arme:
 
 persos=[]
 persos.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
+persos.append(["stickman2","p2",1000,2,5,0.8,50,3,2,0,0])
+persos.append(["stickman3","p3",1000,2,5,0.8,50,3,2,0,0])
 
 #0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive 9=arme1 10=arme2
 
@@ -235,9 +249,14 @@ class Perso:
         self.points=0
         self.dtch=None
         self.dtpdtch=time.time()
+        self.cible=None
+        self.dcibl=time.time()
+        self.tcibl=10
+        self.dmv="left"
     def bouger(self,aa):
         if not self.mort:
             if aa=="left":
+                self.dmv="left"
                 self.issensgauche=True
                 self.vitx-=self.acc
                 if self.vitx<-self.vit_max: self.vitx=-self.vit_max
@@ -249,6 +268,7 @@ class Perso:
                 self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             if aa=="right":
+                self.dmv="right"
                 self.issensdroite=True
                 self.vitx+=self.acc
                 if self.vitx>self.vit_max: self.vitx=self.vit_max
@@ -260,9 +280,10 @@ class Perso:
                 self.isenlair=True
                 if self.isacroupi: self.isacroupi=False
             elif aa=="down":
+                self.dmv="down"
                 self.issensbas=True
                 self.vity+=self.acc
-                if self.vity>self.vit_max: self.vity=self.vit_max
+                if self.vity>self.vit_max*3: self.vity=self.vit_max
                 if self.anim!=self.imgs[4]:
                     self.anim=self.imgs[4]
                     self.an=0
@@ -346,7 +367,11 @@ class Perso:
             self.img=self.anim[self.an]
             self.dan=time.time()
             self.arme_actu.att(1,persos)
-    def update(self,mape):
+    def update(self,mape,persos):
+        if self.isbot and time.time()-self.dcibl>=self.tcibl:
+            self.dcible=time.time()
+            self.cible=random.choice(persos)
+            while self.cible==self: self.cible=random.choice(persos)
         if not self.mort:
             if time.time()-self.dan>=self.tan:
                 self.dan=time.time()
@@ -413,46 +438,97 @@ def verif_keys(persos):
     key=pygame.key.get_pressed()
     for p in persos:
         if not p.isbot:
-            p.issenshaut=False
-            p.issensbas=False
-            p.issensgauche=False
-            p.issensdroite=False
-            isatt=False
-            isesq=False
-            if key[p.keys[0]]: #up
-                p.issenshaut=True
-            if key[p.keys[1]]: #down
-                p.issensbas=True
-            if key[p.keys[2]]: #left
-                p.issensgauche=True
-            if key[p.keys[3]]: #right
-                p.issensdroite=True
-            if key[p.keys[4]]: #sauter
-                p.sauter()
-            if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
-            if key[p.keys[5]]: #attaque legere
-                p.attaque_legere(persos)
-                isatt=True
-            if key[p.keys[6]]: #attaque lourde
-                p.attaque_lourde(persos)
-                isatt=True
-            if key[p.keys[7]]: #esquive
-                p.esquive()
-                isesq=True
-            if not isesq and not isatt:
+            if type(p.keys)==list:
+                p.issenshaut=False
+                p.issensbas=False
+                p.issensgauche=False
+                p.issensdroite=False
+                isatt=False
+                isesq=False
                 if key[p.keys[0]]: #up
-                    p.bouger("up")
+                    p.issenshaut=True
                 if key[p.keys[1]]: #down
-                    p.bouger("down")
+                    p.issensbas=True
                 if key[p.keys[2]]: #left
-                    p.bouger("left")
+                    p.issensgauche=True
                 if key[p.keys[3]]: #right
-                    p.bouger("right")
-            
+                    p.issensdroite=True
+                if key[p.keys[4]]: #sauter
+                    p.sauter()
+                if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issensdroite=True
+                if key[p.keys[5]]: #attaque legere
+                    p.attaque_legere(persos)
+                    isatt=True
+                if key[p.keys[6]]: #attaque lourde
+                    p.attaque_lourde(persos)
+                    isatt=True
+                if key[p.keys[7]]: #esquive
+                    p.esquive()
+                    isesq=True
+                if not isesq and not isatt:
+                    if key[p.keys[0]]: #up
+                        p.bouger("up")
+                    if key[p.keys[1]]: #down
+                        p.bouger("down")
+                    if key[p.keys[2]]: #left
+                        p.bouger("left")
+                    if key[p.keys[3]]: #right
+                        p.bouger("right")
+            elif p.keys==mon_joystick:
+                if mon_joystick.get_numaxes() >=4 and mon_joystick.get_numbuttons() >=10:
+                    p.issenshaut=False
+                    p.issensbas=False
+                    p.issensgauche=False
+                    p.issensdroite=False
+                    isatt=False
+                    isesq=False
+                    #haut-bas
+                    aa=float(mon_joystick.get_axis(1))
+                    if aa > 0: aa=1
+                    elif aa < -0.5 : aa=-1
+                    else: aa=0 
+                    if aa==-1: p.issenshaut=True
+                    if aa==1: p.issensbas=True
+                    #haut-bas
+                    aa=float(mon_joystick.get_axis(0))
+                    if aa > 0: aa=1
+                    elif aa < -0.5 : aa=-1
+                    else: aa=0 
+                    if aa==-1: p.issensgauche=True
+                    if aa==1: p.issensdroite=True
+                    if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issensdroite=True
+                    #sauter
+                    if mon_joystick.get_button(0)==1:
+                        p.sauter()
+                    if mon_joystick.get_button(4)==1 or mon_joystick.get_button(5)==1:
+                        p.esquive()
+                        isesq=True
+                    if mon_joystick.get_button(2)==1:
+                        p.attaque_legere(persos)
+                        isatt=True
+                    if mon_joystick.get_button(1)==1:
+                        p.attaque_lourde(persos)
+                        isatt=True
+                    if not isatt and not isesq:
+                        #haut-bas
+                        aa=float(mon_joystick.get_axis(1))
+                        if aa > 0: aa=1
+                        elif aa < -0.5 : aa=-1
+                        else: aa=0 
+                        if aa==-1: p.bouger("up")
+                        if aa==1: p.bouger("down")
+                        #haut-bas
+                        aa=float(mon_joystick.get_axis(0))
+                        if aa > 0: aa=1
+                        elif aa < -0.5 : aa=-1
+                        else: aa=0 
+                        if aa==-1: p.bouger("left")
+                        if aa==1: p.bouger("right")
+                    if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issensdroite=True
     return persos
         
         
-diff=100
+diff=1
 def bot(persos):
     for p in persos:
         if p.isbot and not p.mort and random.randint(1,diff)==1:
@@ -464,32 +540,49 @@ def bot(persos):
             bgh=0
             att=0
             esquive=0
-            for pp in persos:
-                if p!=pp:
-                    if p.px+p.tx/2>pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=-1
-                    if p.px+p.tx/2<pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=1
-                    if p.py+p.ty/2>pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=-1
-                    if p.py+p.ty/2<pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=1
-                    if (time.time()-pp.arme_actu.datt_leg<=0.5) or (time.time()-pp.arme_actu.datt_lourd<=0.5): esquive=1
-                    if time.time()-p.arme_actu.datt_leg>=p.arme_actu.tatt_leg and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=1
-                    if time.time()-p.arme_actu.datt_lourd>=p.arme_actu.tatt_lourd and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=2
-            if att==0:
-                if bgv==-1: p.sauter()
-                if bgv==1: p.bouger("down")
-                if bgh==-1: p.bouger("left")
-                if bgh==1: p.bouger("right")
-                if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
-                if esquive==1: p.esquive()
+            if p.cible!=None:
+                pp=p.cible
+                if p.px+p.tx/2>pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=-1
+                if p.px+p.tx/2<pp.px+pp.tx/2 and abs((p.px+p.tx/2)-(pp.px+pp.tx/2)) > 60: bgh=1
+                if p.py+p.ty/2>pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=-1
+                if p.py+p.ty/2<pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=1
+                if (time.time()-pp.arme_actu.datt_leg<=0.5) or (time.time()-pp.arme_actu.datt_lourd<=0.5): esquive=1
+                if time.time()-p.arme_actu.datt_leg>=p.arme_actu.tatt_leg and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=1
+                if time.time()-p.arme_actu.datt_lourd>=p.arme_actu.tatt_lourd and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=2
+                if att==0:
+                    if bgv==-1: p.sauter()
+                    if bgv==1: p.bouger("down")
+                    if bgh==-1: p.bouger("left")
+                    if bgh==1: p.bouger("right")
+                    if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
+                    if esquive==1: p.esquive()
+                else:
+                    if bgv==-1: p.issenshaut=True
+                    if bgv==1: p.issensbas=True
+                    if bgh==-1: p.issensgauche=True
+                    if bgh==1: p.issensdroite=True
+                    if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
+                    if att==1:
+                        p.attaque_legere(persos)
+                    elif att==2:
+                        p.attaque_lourde(persos)
             else:
-                if bgv==-1: p.issenshaut=True
-                if bgv==1: p.issensbas=True
-                if bgh==-1: p.issensgauche=True
-                if bgh==1: p.issensdroite=True
-                if not p.issenshaut and not p.issensbas and not p.issensgauche and not p.issensdroite: p.issenshaut=True
-                if att==1:
-                    p.attaque_legere(persos)
-                elif att==2:
-                    p.attaque_lourde(persos)
+                aaa=random.choice(["up","down","left","right"])
+                if aaa=="up": p.issenshaut=True
+                elif aaa=="down": p.issensbas=True
+                elif aaa=="left": p.issensgauche=True
+                elif aaa=="right": p.issensdroite=True
+                if random.randint(1,10)==1: #attaque ou pas
+                    if random.randint(0,1)==0: p.attaque_legere(persos)
+                    else: p.attaque_lourde(persos)
+                else:
+                    aaa=["up","down","left","right"]
+                    for x in range(5): aaa.append(p.dmv)
+                    bbb=random.choice(aaa)
+                    if bbb!="up":
+                        p.bouger(bbb)
+                    else: p.sauter()
+                
             
             
             
@@ -542,12 +635,15 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps):
 def main_jeu(nbpersos):
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     persos=[]
-    k=[[K_UP,K_DOWN,K_LEFT,K_RIGHT,K_KP0,K_KP1,K_KP2,K_KP3,K_KP4],None]
-    bt=[False,True]
+    k=[]
+    if nb_joysticks > 0: k.append( mon_joystick )
+    k.append([K_UP,K_DOWN,K_LEFT,K_RIGHT,K_KP0,K_KP1,K_KP2,K_KP3,K_KP4])
+    k.append(None)
+    bt=[False,False,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
-        persos.append( Perso(sp[0],sp[1],0,k[x],bt[x]) )
+        persos.append( Perso(sp[0],sp[1],x,k[x],bt[x]) )
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     pause=False
     encour=True
@@ -565,7 +661,7 @@ def main_jeu(nbpersos):
         verif_keys(persos)
         bot(persos)
         for p in persos:
-            p.update(mape)
+            p.update(mape,persos)
         for p in persos:
             if p.mort:
                 if p.dtch!=None and time.time()-p.dtpdtch<=10:
@@ -587,6 +683,8 @@ def main_jeu(nbpersos):
             elif event.type==KEYDOWN:
                 if event.key==K_ESCAPE:
                     pause=not pause
+            elif event.type==JOYBUTTONDOWN:
+                if mon_joystick.get_button(7)==1: pause=not pause
             elif event.type==MOUSEBUTTONUP:
                 pos=pygame.mouse.get_pos()
                 for b in bts:
@@ -634,5 +732,5 @@ def main():
             elif event.type==MOUSEBUTTONUP:
                 pass
 
-main_jeu(2)
+main_jeu(3)
 
