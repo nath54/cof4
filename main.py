@@ -73,14 +73,14 @@ class Mape:
         self.cl=cl
         self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
         self.recthaut=pygame.Rect(self.px+self.tx*0.01,self.py,self.tx*0.98,self.ty*0.01)
-        self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
-        self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.01,self.tx*0.01,self.ty*0.98)
-        self.rectbas=pygame.Rect(self.px,self.py+self.ty*0.99,self.tx,self.ty*0.01)
+        self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.1,self.tx*0.01,self.ty*0.9)
+        self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.1,self.tx*0.01,self.ty*0.9)
+        self.rectbas=pygame.Rect(self.px+self.tx*0.05,self.py+self.ty*0.99,self.tx*0.9,self.ty*0.01)
         
 xt=int(txb/2)
 yt=int(tyb/2)
 
-hitbox_poings=[[-xt,-tyb,txb,tyb],[-xt,tyb,txb,tyb],[0,-yt,txb,tyb],[-txb,-yt,txb,tyb]]
+hitbox_poings=[[-xt,-tyb,txb,tyb],[-xt,yt,txb,tyb],[0,-yt,txb,tyb],[-txb,-yt,txb,tyb]]
 #0=haut 1=bas 2=droite 3=gauche
 #xx+h[0] , yy+h[1] , h[2] , h[3]
 
@@ -126,13 +126,13 @@ class Arme:
                 if self.pos.issenshaut:
                     hb=pygame.Rect(xx+self.hitbox_att[0][0],yy+self.hitbox_att[0][1],self.hitbox_att[0][2],self.hitbox_att[0][3])
                     if hb.colliderect(p.rect): touche=True
-                if self.pos.issensbas and p.rect.colliderect(self.hitbox_att[1]):
+                if self.pos.issensbas:
                     hb=pygame.Rect(xx+self.hitbox_att[1][0],yy+self.hitbox_att[1][1],self.hitbox_att[1][2],self.hitbox_att[1][3])
                     if hb.colliderect(p.rect): touche=True
-                if self.pos.issensdroite and p.rect.colliderect(self.hitbox_att[2]):
+                if self.pos.issensdroite:
                     hb=pygame.Rect(xx+self.hitbox_att[2][0],yy+self.hitbox_att[2][1],self.hitbox_att[2][2],self.hitbox_att[2][3])
                     if hb.colliderect(p.rect): touche=True
-                if self.pos.issensgauche and p.rect.colliderect(self.hitbox_att[3]):
+                if self.pos.issensgauche:
                     hb=pygame.Rect(xx+self.hitbox_att[3][0],yy+self.hitbox_att[3][1],self.hitbox_att[3][2],self.hitbox_att[3][3])
                     if hb.colliderect(p.rect): touche=True
                 if touche and not p.isesquive and not p.inv and tpatt==0: #att legere
@@ -165,6 +165,7 @@ persos=[]
 persos.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
 persos.append(["stickman2","p2",1000,2,5,0.8,50,3,2,0,0])
 persos.append(["stickman3","p3",1000,2,5,0.8,50,3,2,0,0])
+persos.append(["stickman4","p4",1000,2,5,0.8,50,3,2,0,0])
 
 #0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive 9=arme1 10=arme2
 
@@ -253,6 +254,7 @@ class Perso:
         self.dcibl=time.time()
         self.tcibl=10
         self.dmv="left"
+        self.vies=3
     def bouger(self,aa):
         if not self.mort:
             if aa=="left":
@@ -588,7 +590,7 @@ def bot(persos):
             
     
 
-def aff_jeu(pause,persos,mape,cam,fondmape,fps):
+def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu):
     bts=[]
     for x in range(6): bts.append(None)
     fenetre.blit(fondmape,[0,0])
@@ -614,7 +616,8 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps):
             pygame.draw.rect( fenetre , (0,0,0) , (xx,yy+tyb+ry(5),txb,ry(7)) , 2 )
             pygame.draw.rect( fenetre , (255,255,255) , (xx+txb+rx(5),yy+tyb-ry(5),rx(20),ry(20)) , 0 )
             pygame.draw.rect( fenetre , (0,0,0) , (xx+txb+rx(5),yy+tyb-ry(5),rx(20),ry(20)) , 1 )
-            fenetre.blit( font1.render(str(p.points),20,(0,0,0)) , [xx+txb+rx(7),yy+tyb-ry(3)] )
+            if modejeu==0: fenetre.blit( font1.render(str(p.points),20,(0,0,0)) , [xx+txb+rx(7),yy+tyb-ry(3)] )
+            elif modejeu==1: fenetre.blit( font1.render(str(p.vies),20,(0,0,0)) , [xx+txb+rx(7),yy+tyb-ry(3)] )
             xx+=rx(150)
     else:
         pygame.draw.rect(fenetre,(25,105,150),( rx(50),ry(50),rx(500),ry(924) ),0)
@@ -627,6 +630,18 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps):
         fenetre.blit( font3.render("ne fait rien",25,(255,255,255)) , [rx(125),ry(375)] )
         bts[3]=pygame.draw.rect(fenetre,(25,50,150),( rx(100),ry(450),rx(300),ry(75) ),0)
         fenetre.blit( font3.render("quitter",25,(255,255,255)) , [rx(125),ry(475)] )
+    tpa=int(tpartie)
+    if tpa>60:  
+        tpb=float(tpa)/60.
+        tpd=int(tpb)
+        tpc=tpb-tpd
+        if tpc<0:
+            tpd-=1
+            tpc=abs(tpc)
+        p=str(tpd)+"min "+str(int(tpc*60))+"sec"
+    else:
+        p=str(tpa)+"sec"    
+    fenetre.blit(font2.render("temps : "+p,20,(255,255,255)),[rx(1005),ry(15)])
     fenetre.blit(font1.render("fps : "+str(fps),20,(255,255,255)),[rx(15),ry(15)])
     pygame.display.update()
     return bts
@@ -639,11 +654,15 @@ def main_jeu(nbpersos):
     if nb_joysticks > 0: k.append( mon_joystick )
     k.append([K_UP,K_DOWN,K_LEFT,K_RIGHT,K_KP0,K_KP1,K_KP2,K_KP3,K_KP4])
     k.append(None)
-    bt=[False,False,True]
+    k.append(None)
+    k.append(None)
+    bt=[False,False,True,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
-        persos.append( Perso(sp[0],sp[1],x,k[x],bt[x]) )
+        xx=x
+        if xx>len(persos)-1: xx=len(persos)-1
+        persos.append( Perso(sp[0],sp[1],xx,k[x],bt[x]) )
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     pause=False
     encour=True
@@ -655,9 +674,11 @@ def main_jeu(nbpersos):
     fondmape=random.choice(fondmapes)
     bts=[]
     fps=0
+    modejeu=0
+    tpartie=8.*60.
     while encour:
         t1=time.time()
-        bts=aff_jeu(pause,persos,mape,cam,fondmape,fps)
+        bts=aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu)
         verif_keys(persos)
         bot(persos)
         for p in persos:
@@ -665,19 +686,31 @@ def main_jeu(nbpersos):
         for p in persos:
             if p.mort:
                 if p.dtch!=None and time.time()-p.dtpdtch<=10:
-                    p.dtch.points+=2
-                else: p.points-=2
-                p.points-=1
-                sp=random.choice(spawnpoints)
-                p.vie=p.vie_tot
-                p.isenlair=True
-                p.inv=True
-                p.dinv=time.time()
-                p.px=sp[0]
-                p.py=sp[1]
-                p.dtch=None
-                p.mort=False
-                
+                    if modejeu==0: p.dtch.points+=2
+                else:
+                    if modejeu==0: p.points-=2
+                if modejeu==0: p.points-=1
+                elif modejeu==1: p.vies-=1
+                if modejeu != 1 or p.vies > 0:
+                    sp=random.choice(spawnpoints)
+                    p.vie=p.vie_tot
+                    p.isenlair=True
+                    p.inv=True
+                    p.dinv=time.time()
+                    p.px=sp[0]
+                    p.py=sp[1]
+                    p.dtch=None
+                    p.mort=False
+                    p.vitx=0
+                    p.vity=0
+        cx,cy=0,0
+        for p in persos:
+            cx+=p.px
+            cy+=p.py
+        cx=int(cx/len(persos))
+        cy=int(cy/len(persos))
+        cam=[-cx+tex/2,-cy+tey/2]
+        cam=[0,0]
         for event in pygame.event.get():
             if event.type==QUIT: exit()
             elif event.type==KEYDOWN:
@@ -695,6 +728,38 @@ def main_jeu(nbpersos):
         t2=time.time()
         tt=(t2-t1)
         if tt!=0: fps=int(1./tt)
+        tpartie-=tt
+        if tpartie<=0:
+            encour=False
+        if modejeu==1:
+            nbvie=0
+            for p in persos:
+                if p.vies>0: nbvie+=1
+            if nbvie<=1: encour=False
+    fenetre.fill((50,15,185))
+    classement=[]
+    for g in range(len(persos)):
+        lpp=random.choice(persos)
+        while lpp in classement: lpp=random.choice(persos)
+        for p in persos:
+            if p!=lpp and not p in classement:
+                if modejeu==0 and p.points>lpp.points: lpp=p
+                elif modejeu==1 and p.vies>lpp.vies: lpp=p
+        classement.append(lpp)
+    xx,yy=rx(50),ry(50)
+    for p in classement:
+        fenetre.blit( p.imgs[14][0] , [xx,yy])
+        fenetre.blit( font1.render(str(classement.index(p)+1)+" : "+p.nom,20,(0,0,0)) , [xx,yy+tyb+ry(5)])
+        xx+=txb+rx(50)
+    fenetre.blit( font3.render("press space to continue",20,(0,0,0)) , [rx(100),ry(900)])
+    pygame.display.update()
+    encour2=True
+    while encour2:
+        for event in pygame.event.get():
+            if event.type==QUIT: exit()
+            elif event.type==KEYDOWN:
+                if event.key==K_SPACE:
+                    encour2=False
 
 
 
@@ -732,5 +797,5 @@ def main():
             elif event.type==MOUSEBUTTONUP:
                 pass
 
-main_jeu(3)
+main_jeu(4)
 
