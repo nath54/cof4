@@ -92,7 +92,7 @@ armes.append(["poing",20,50,5,10,None,hitbox_poings,0.2,0.5,0.15,0.2])
 
 def dist(p1,p2): return int(math.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2))
 
-aproj=8
+aproj=4
 
 class Arme:
     def __init__(self,tp,pos):
@@ -161,11 +161,11 @@ class Arme:
                     
         
 
-persos=[]
-persos.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
-persos.append(["stickman2","p2",1000,2,5,0.8,50,3,2,0,0])
-persos.append(["stickman3","p3",1000,2,5,0.8,50,3,2,0,0])
-persos.append(["stickman4","p4",1000,2,5,0.8,50,3,2,0,0])
+prss=[]
+prss.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
+prss.append(["stickman2","p2",1000,2,5,0.8,50,3,2,0,0])
+prss.append(["stickman3","p3",1000,2,5,0.8,50,3,2,0,0])
+prss.append(["stickman4","p4",1000,2,5,0.8,50,3,2,0,0])
 
 #0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive 9=arme1 10=arme2
 
@@ -194,8 +194,8 @@ def load_imgs(nim):
     return imgs
 
 class Perso:
-    def __init__(self,x,y,tp,keys,isbot):
-        pp=persos[tp]
+    def __init__(self,x,y,tp,keys,isbot,vies):
+        pp=prss[tp]
         self.isbot=isbot
         self.px=x
         self.py=y
@@ -254,7 +254,7 @@ class Perso:
         self.dcibl=time.time()
         self.tcibl=10
         self.dmv="left"
-        self.vies=3
+        self.vies=vies
     def bouger(self,aa):
         if not self.mort:
             if aa=="left":
@@ -395,6 +395,7 @@ class Perso:
                 if self.isenlair and not self.isesquive and self.vity < self.vit_max*0.8: self.vity+=2.5
                 self.px+=self.vitx
                 self.py+=self.vity
+                if self.py<-tey/2:  self.py=-tey/2
                 if self.py>=tey:
                     self.mort=True
                     self.vie=0
@@ -590,7 +591,7 @@ def bot(persos):
             
     
 
-def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu):
+def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu,msgkills):
     bts=[]
     for x in range(6): bts.append(None)
     fenetre.blit(fondmape,[0,0])
@@ -608,7 +609,25 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu):
             elif p.mort:
                 pass
             else:
-                fenetre.blit( p.img , [cam[0]+p.px,cam[1]+p.py] )
+                if cam[0]+p.px>0 and cam[0]+p.px+p.tx<tex and cam[1]+p.py>0 and cam[1]+p.py+p.ty < tey:
+                    fenetre.blit( p.img , [cam[0]+p.px,cam[1]+p.py] )
+                else:
+                    if cam[0]+p.px <= 0:
+                        pygame.draw.polygon(fenetre,(0,0,0),( (0,int(p.py)) , (rx(5),p.py-ry(5)) , (rx(5),p.py+ry(5)) ) , 0)
+                        pygame.draw.circle(fenetre,(0,0,0),(rx(5)+int(txb/2),int(p.py)),int(txb/2),3)
+                        fenetre.blit(p.img , [rx(7),int(p.py-tyb/2)] )
+                    elif cam[0]+p.px+p.tx >= tex:
+                        pygame.draw.polygon(fenetre,(0,0,0),( (tex,int(p.py)) , (tex-rx(5),p.py-ry(5)) , (tex-rx(5),p.py+ry(5)) ) , 0)
+                        pygame.draw.circle(fenetre,(0,0,0),(tex-rx(5)-int(txb/2),int(p.py)),int(txb/2),3)
+                        fenetre.blit(p.img , [tex-rx(7)-txb,int(p.py-tyb/2)] )
+                    if cam[1]+p.py <= 0:
+                        pygame.draw.polygon(fenetre,(0,0,0),( (0,0) , (p.px-rx(5),ry(5)) , (p.px+rx(5),ry(5)) ) , 0)
+                        pygame.draw.circle(fenetre,(0,0,0),(int(p.px),ry(5)+int(tyb/2)),int(txb/2),3)
+                        fenetre.blit(p.img , [int(p.px-txb/2),ry(7)] )
+                    elif cam[1]+p.py+p.ty >= 0:
+                        pygame.draw.polygon(fenetre,(0,0,0),( (int(p.px),0) , (p.px-rx(5),ry(5)) , (p.px+rx(5),ry(5)) ) , 0)
+                        pygame.draw.circle(fenetre,(0,0,0),(int(p.px),int(tey-ry(5)-tyb/2)),int(txb/2),3)
+                        fenetre.blit(p.img , [int(p.px-txb/2),tey-ry(7)-tyb] )
             fenetre.blit( p.imgs[14][0] , [xx,yy] )
             pygame.draw.rect( fenetre , (0,0,0) , (xx,yy,txb,tyb) , 2 )
             if p.vie>=0:
@@ -630,6 +649,13 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu):
         fenetre.blit( font3.render("ne fait rien",25,(255,255,255)) , [rx(125),ry(375)] )
         bts[3]=pygame.draw.rect(fenetre,(25,50,150),( rx(100),ry(450),rx(300),ry(75) ),0)
         fenetre.blit( font3.render("quitter",25,(255,255,255)) , [rx(125),ry(475)] )
+    xx,yy=rx(50),ry(150)
+    for m in msgkills:
+        pygame.draw.rect( fenetre , (40,40,40) , (xx,yy,rx(300),ry(30)) ,0)
+        fenetre.blit( pygame.transform.scale(m[0].imgs[14][0],[rx(30),ry(30)]) , [xx,yy])
+        fenetre.blit( pygame.transform.scale(m[1].imgs[14][0],[rx(30),ry(30)]) , [xx+rx(270),yy+ry(3)])
+        fenetre.blit( font2.render(m[0].nom+" a tué "+m[1].nom,20,(255,255,255)) , [xx+rx(35),yy+ry(3)])
+        yy+=ry(40)
     tpa=int(tpartie)
     if tpa>60:  
         tpb=float(tpa)/60.
@@ -646,8 +672,15 @@ def aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu):
     pygame.display.update()
     return bts
 
+def verif_keys_client(keys):
+    key=pygame.key.get_pressed()
+    ks=[]
+    for kk in keys:
+        if key[kk]: ks.append(1)
+        else: ks.append(0)
+    return ks
 
-def main_jeu(nbpersos):
+def main_jeu(nbpersos,modejeu,vies):
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     persos=[]
     k=[]
@@ -656,13 +689,13 @@ def main_jeu(nbpersos):
     k.append(None)
     k.append(None)
     k.append(None)
-    bt=[False,False,True,True]
+    bt=[False,True,True,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
         xx=x
         if xx>len(persos)-1: xx=len(persos)-1
-        persos.append( Perso(sp[0],sp[1],xx,k[x],bt[x]) )
+        persos.append( Perso(sp[0],sp[1],xx,k[x],bt[x],vies) )
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     pause=False
     encour=True
@@ -676,9 +709,11 @@ def main_jeu(nbpersos):
     fps=0
     modejeu=0
     tpartie=8.*60.
+    msgkills=[]
+    #0=nom tueur 1=nom tué 2=tps mis ce message 3=duree message
     while encour:
         t1=time.time()
-        bts=aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu)
+        bts=aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu,msgkills)
         verif_keys(persos)
         bot(persos)
         for p in persos:
@@ -687,8 +722,10 @@ def main_jeu(nbpersos):
             if p.mort:
                 if p.dtch!=None and time.time()-p.dtpdtch<=10:
                     if modejeu==0: p.dtch.points+=2
+                    msgkills.append( [p.dtch,p,time.time(),1.5] )
                 else:
                     if modejeu==0: p.points-=2
+                    msgkills.append( [p,p,time.time(),1.5] )
                 if modejeu==0: p.points-=1
                 elif modejeu==1: p.vies-=1
                 if modejeu != 1 or p.vies > 0:
@@ -711,6 +748,8 @@ def main_jeu(nbpersos):
         cy=int(cy/len(persos))
         cam=[-cx+tex/2,-cy+tey/2]
         cam=[0,0]
+        for m in msgkills:
+            if time.time()-m[2]>=m[3] and m in msgkills: del(msgkills[msgkills.index(m)])
         for event in pygame.event.get():
             if event.type==QUIT: exit()
             elif event.type==KEYDOWN:
@@ -777,6 +816,9 @@ def aff_menu(menu):
     bts=[]
     for x in range(6): bts.append(None)
     fenetre.fill((0,0,0))
+    if menu==0:
+        pass
+    elif menu==1: pass
     pygame.display.update()
     return bts
 
@@ -797,5 +839,8 @@ def main():
             elif event.type==MOUSEBUTTONUP:
                 pass
 
-main_jeu(4)
+nbp=4
+modejeu=0
+vies=3
+main_jeu(nbp,modejeu,vies)
 
