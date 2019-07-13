@@ -291,7 +291,7 @@ class Perso:
         self.dtch=None
         self.dtpdtch=time.time()
         self.cible=None
-        self.dcibl=time.time()
+        self.dcibl=0
         self.tcibl=10
         self.dmv="left"
         self.vies=vies
@@ -748,7 +748,7 @@ def main_jeu(nbpersos,modejeu,vies):
     k.append(None)
     k.append(None)
     k.append(None)
-    bt=[False,True,True,True]
+    bt=[False,False,True,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
@@ -888,24 +888,28 @@ def aff_menu(menu):
     elif b1.collidepoint(pos): cl=(200,150,50)
     else: cl=(100,100,50)
     bts[0]=pygame.draw.rect(fenetre,cl,b1,0)
+    fenetre.blit( font2.render("jouer",20,(0,0,0)) , [rx(20),ry(15)])
     #bouton 2
     b2=pygame.Rect(rx(15),ry(105),rx(150),ry(75))
     if menu==1: cl=(200,200,0)
     elif b2.collidepoint(pos): cl=(200,150,50)
     else: cl=(100,100,50)
     bts[1]=pygame.draw.rect(fenetre,cl,b2,0)
+    fenetre.blit( font2.render("ne fait rien",20,(0,0,0)) , [rx(20),ry(110)])
     #bouton 3
     b3=pygame.Rect(rx(15),ry(205),rx(150),ry(75))
     if menu==2: cl=(200,200,0)
     elif b3.collidepoint(pos): cl=(200,150,50)
     else: cl=(100,100,50)
     bts[2]=pygame.draw.rect(fenetre,cl,b3,0)
+    fenetre.blit( font2.render("ne fait rien",20,(0,0,0)) , [rx(20),ry(210)])
     #bouton 4
     b4=pygame.Rect(rx(15),ry(305),rx(150),ry(75))
     if menu==3: cl=(200,200,0)
     elif b4.collidepoint(pos): cl=(200,150,50)
     else: cl=(100,100,50)
     bts[3]=pygame.draw.rect(fenetre,cl,b4,0)
+    fenetre.blit( font2.render("quitter",20,(0,0,0)) , [rx(20),ry(310)])
     #menus
     if menu==0:
         pass
@@ -922,7 +926,7 @@ def main():
     modejeu=1
     vies=3
     bts=[]
-    menu=0
+    menu=None
     encoure=True
     while encoure:
         pos=pygame.mouse.get_pos()
@@ -939,7 +943,7 @@ def main():
                             main_jeu(nbp,modejeu,vies)
                         elif di==1: menu=1
                         elif di==2: menu=2
-                        elif di==3: menu=3
+                        elif di==3: exit()
 
 
 main()
