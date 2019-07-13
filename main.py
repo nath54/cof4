@@ -53,6 +53,11 @@ dimp="images/persos/"
 
 fondmapes=[pygame.transform.scale(pygame.image.load(dim+"fondmape1.png"),[tex,tey]) ] #,pygame.transform.scale(pygame.image.load(dim+"fondmape2.png"),[tex,tey])]
 
+ds="fsx/"
+hitsounds=[ds+"hit01.mp3.flac",ds+"hit02.mp3.flac",ds+"hit03.mp3.flac",ds+"hit04.mp3.flac",ds+"hit05.mp3.flac",ds+"hit06.mp3.flac",ds+"hit07.mp3.flac",ds+"hit08.mp3.flac",ds+"hit09.mp3.flac",ds+"hit10.mp3.flac",ds+"hit11.mp3.flac",ds+"hit12.mp3.flac",ds+"hit13.mp3.flac",ds+"hit14.mp3.flac",ds+"hit15.mp3.flac",ds+"hit16.mp3.flac",ds+"hit17.mp3.flac",ds+"hit18.mp3.flac",ds+"hit19.mp3.flac",ds+"hit20.mp3.flac",ds+"hit21.mp3.flac",ds+"hit22.mp3.flac",ds+"hit23.mp3.flac",ds+"hit24.mp3.flac",ds+"hit25.mp3.flac",ds+"hit26.mp3.flac",ds+"hit27.mp3.flac",ds+"hit28.mp3.flac"]
+for x in range(len(hitsounds)):
+    hitsounds[x]=pygame.mixer.Sound(hitsounds[x])
+
 font1=pygame.font.SysFont("Arial",ry(17))
 font2=pygame.font.SysFont("Arial",ry(20))
 font3=pygame.font.SysFont("Arial",ry(25))
@@ -85,10 +90,10 @@ hitbox_poings=[[-xt,-tyb,txb,tyb],[-xt,yt,txb,tyb],[0,-yt,txb,tyb],[-txb,-yt,txb
 #xx+h[0] , yy+h[1] , h[2] , h[3]
 
 armes=[]
-armes.append(["poing",20,50,5,10,None,hitbox_poings,0.2,0.5,0.15,0.2])
+armes.append(["poing",20,50,5,10,None,hitbox_poings,0.2,0.5,0.15,0.2,0.5,0.3])
 #0=nom 1=dg att legere 2=dg att lourde 3=projection att legere 4=projection att lourde
 #5=images 6=hitboxs 7=tpatt legere 8=tp att lourde
-#9=dur att leg 10=dur att lourde
+#9=dur att leg 10=dur att lourde 11=temps imobilise att legere 12=// att lourde
 
 def dist(p1,p2): return int(math.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2))
 
@@ -117,55 +122,73 @@ class Arme:
         self.tatt_lourd=arm[8]
         self.dur_att_leg=arm[9]
         self.dur_att_lourd=arm[10]
+        self.timobilise_leg=arm[11]
+        self.timobilise_lourd=arm[12]
     def att(self,tpatt,persos):
-        xx=self.pos.px+self.pos.tx/2
-        yy=self.pos.py+self.pos.ty/2
-        for p in persos:
-            if p!=self.pos:
-                touche=False
-                if self.pos.issenshaut:
-                    hb=pygame.Rect(xx+self.hitbox_att[0][0],yy+self.hitbox_att[0][1],self.hitbox_att[0][2],self.hitbox_att[0][3])
-                    if hb.colliderect(p.rect): touche=True
-                if self.pos.issensbas:
-                    hb=pygame.Rect(xx+self.hitbox_att[1][0],yy+self.hitbox_att[1][1],self.hitbox_att[1][2],self.hitbox_att[1][3])
-                    if hb.colliderect(p.rect): touche=True
-                if self.pos.issensdroite:
-                    hb=pygame.Rect(xx+self.hitbox_att[2][0],yy+self.hitbox_att[2][1],self.hitbox_att[2][2],self.hitbox_att[2][3])
-                    if hb.colliderect(p.rect): touche=True
-                if self.pos.issensgauche:
-                    hb=pygame.Rect(xx+self.hitbox_att[3][0],yy+self.hitbox_att[3][1],self.hitbox_att[3][2],self.hitbox_att[3][3])
-                    if hb.colliderect(p.rect): touche=True
-                if touche and not p.isesquive and not p.inv and tpatt==0: #att legere
-                    p.vie-=self.dg_leg
-                    if p.vie<=0: p.vie=1
-                    p.vitx,p.vity=0,0
-                    p.isenlair=True
-                    if self.pos.issenshaut: p.vity-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensbas: p.vity+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensgauche: p.vitx-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensdroite: p.vitx+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
-                    p.dtch=self.pos
-                    p.dtpdtch=time.time()
-                elif touche and not p.isesquive and not p.inv and tpatt==1: #att legere
-                    p.vie-=self.dg_lourd
-                    if p.vie<=0: p.vie=1
-                    p.vitx,p.vity=0,0
-                    p.isenlair=True
-                    if self.pos.issenshaut: p.vity-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensbas: p.vity+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensgauche: p.vitx-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
-                    if self.pos.issensdroite: p.vitx+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
-                    p.dtch=self.pos
-                    p.dtpdtch=time.time()
-                    
+        if not self.pos.isimobil:
+            xx=self.pos.px+self.pos.tx/2
+            yy=self.pos.py+self.pos.ty/2
+            for p in persos:
+                if p!=self.pos:
+                    touche=False
+                    if self.pos.issenshaut:
+                        hb=pygame.Rect(xx+self.hitbox_att[0][0],yy+self.hitbox_att[0][1],self.hitbox_att[0][2],self.hitbox_att[0][3])
+                        if hb.colliderect(p.rect): touche=True
+                    if self.pos.issensbas:
+                        hb=pygame.Rect(xx+self.hitbox_att[1][0],yy+self.hitbox_att[1][1],self.hitbox_att[1][2],self.hitbox_att[1][3])
+                        if hb.colliderect(p.rect): touche=True
+                    if self.pos.issensdroite:
+                        hb=pygame.Rect(xx+self.hitbox_att[2][0],yy+self.hitbox_att[2][1],self.hitbox_att[2][2],self.hitbox_att[2][3])
+                        if hb.colliderect(p.rect): touche=True
+                    if self.pos.issensgauche:
+                        hb=pygame.Rect(xx+self.hitbox_att[3][0],yy+self.hitbox_att[3][1],self.hitbox_att[3][2],self.hitbox_att[3][3])
+                        if hb.colliderect(p.rect): touche=True
+                    if touche and not p.isesquive and not p.inv and tpatt==0: #att legere
+                        p.cible=self.pos
+                        p.vie-=self.dg_leg
+                        if p.vie<=0: p.vie=1
+                        p.vitx,p.vity=0,0
+                        p.isenlair=True
+                        if self.pos.issenshaut: p.vity-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensbas: p.vity+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensgauche: p.vitx-=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensdroite: p.vitx+=self.proj_leg*((1.-(p.vie/p.vie_tot))*aproj)
+                        p.dtch=self.pos
+                        p.dtpdtch=time.time()
+                        p.isimobil=True
+                        p.dimobil=time.time()
+                        p.timobil=self.timobilise_leg
+                        try:
+                            ef=random.choice(hitsounds)
+                            ef.play()
+                        except: pass
+                    elif touche and not p.isesquive and not p.inv and tpatt==1: #att legere
+                        p.cible=self.pos
+                        p.vie-=self.dg_lourd
+                        if p.vie<=0: p.vie=1
+                        p.vitx,p.vity=0,0
+                        p.isenlair=True
+                        if self.pos.issenshaut: p.vity-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensbas: p.vity+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensgauche: p.vitx-=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                        if self.pos.issensdroite: p.vitx+=self.proj_lourd*((1.-(p.vie/p.vie_tot))*aproj)
+                        p.dtch=self.pos
+                        p.dtpdtch=time.time()
+                        p.isimobil=True
+                        p.dimobil=time.time()
+                        p.timobil=self.timobilise_lourd
+                        try:
+                            ef=random.choice(hitsounds)
+                            ef.play()
+                        except: pass
                     
         
 
 prss=[]
-prss.append(["stickman","p1",1000,2,5,0.8,50,3,2,0,0])
-prss.append(["stickman2","p2",1000,2,5,0.8,50,3,2,0,0])
-prss.append(["stickman3","p3",1000,2,5,0.8,50,3,2,0,0])
-prss.append(["stickman4","p4",1000,2,5,0.8,50,3,2,0,0])
+prss.append(["stickman","p1",5000,2,5,0.8,10,3,2,0,0])
+prss.append(["stickman2","p2",5000,2,5,0.8,10,3,2,0,0])
+prss.append(["stickman3","p3",5000,2,5,0.8,10,3,2,0,0])
+prss.append(["stickman4","p4",5000,2,5,0.8,10,3,2,0,0])
 
 #0=nom 1=nom image 2=vie 3=acceleration 4=vitese max 5=decceleration 6=poids 7=nbsauts 8=temps entre chaque esquive 9=arme1 10=arme2
 
@@ -255,8 +278,11 @@ class Perso:
         self.tcibl=10
         self.dmv="left"
         self.vies=vies
+        self.isimobil=False
+        self.dimobil=time.time()
+        self.timobil=0
     def bouger(self,aa):
-        if not self.mort:
+        if not self.mort and not self.isimobil:
             if aa=="left":
                 self.dmv="left"
                 self.issensgauche=True
@@ -294,7 +320,7 @@ class Perso:
                 self.isenlair=True
                 self.isacroupi=True
     def sauter(self):
-        if not self.mort:
+        if not self.mort and not self.isimobil:
             if self.nbsaut > 0 and time.time()-self.djmp>=self.tjmp:
                 self.djmp=time.time()
                 self.vity-=5*self.vit_max
@@ -311,6 +337,7 @@ class Perso:
             if time.time()-self.desq>=self.tesq:
                 self.desq=time.time()
                 self.isesquive=True
+                self.isimobil=False
                 if self.issensgauche or self.issensdroite: self.vitx*=5
                 if self.anim!=self.imgs[13]:
                     self.anim=self.imgs[13]
@@ -320,7 +347,7 @@ class Perso:
                 if self.isenlair and self.nbsaut < self.nbsaut_tot:
                     self.nbsaut+=1
     def attaque_legere(self,persos):
-        if not self.mort and time.time()-self.arme_actu.datt_leg>=self.arme_actu.tatt_leg:
+        if not self.mort and time.time()-self.arme_actu.datt_leg>=self.arme_actu.tatt_leg and not self.isimobil:
             self.arme_actu.datt_leg=time.time()
             if self.issenshaut:
                 if self.issensgauche:
@@ -345,7 +372,7 @@ class Perso:
             self.dan=time.time()
             self.arme_actu.att(0,persos)
     def attaque_lourde(self,persos):
-        if not self.mort and time.time()-self.arme_actu.datt_lourd>=self.arme_actu.tatt_lourd:
+        if not self.mort and time.time()-self.arme_actu.datt_lourd>=self.arme_actu.tatt_lourd and not self.isimobil:
             self.arme_actu.datt_lourd=time.time()
             if self.issenshaut:
                 if self.issensgauche:
@@ -370,11 +397,16 @@ class Perso:
             self.dan=time.time()
             self.arme_actu.att(1,persos)
     def update(self,mape,persos):
+        #bot
         if self.isbot and time.time()-self.dcibl>=self.tcibl:
             self.dcible=time.time()
             self.cible=random.choice(persos)
             while self.cible==self: self.cible=random.choice(persos)
+        #si n'est pas mort
         if not self.mort:
+            #verification de isimobile
+            if self.isimobil and time.time()-self.dimobil >= self.timobil: self.isimobil=False
+            #animation
             if time.time()-self.dan>=self.tan:
                 self.dan=time.time()
                 if self.an<len(self.anim)-1: self.an+=1
@@ -383,24 +415,30 @@ class Perso:
                     if self.anim not in [self.imgs[15],self.imgs[16]]: self.anim=self.imgs[0]
                 if self.an < len(self.anim):
                     self.img=self.anim[self.an]
+            #esquive
             if time.time()-self.desq>=self.duresq:
                 self.isesquive=False
+            #invincible
             if self.inv and time.time()-self.dinv>=self.tinv: self.inv=False
             elif self.inv:
                 if time.time()-self.dapp>=self.tapp:
                     self.dapp=time.time()
                     self.app=not self.app
+            #bouger
             if time.time()-self.dbg >= self.tbg and not self.isimobilise:
                 self.dbg=time.time()
-                if self.isenlair and not self.isesquive and self.vity < self.vit_max*0.8: self.vity+=2.5
+                #gravité
+                if self.isenlair and not self.isesquive and self.vity < self.vit_max*0.8 and not self.isimobil: self.vity+=2.5
                 self.px+=self.vitx
                 self.py+=self.vity
-                if self.py<-tey/2:  self.py=-tey/2
+                #verif mort
+                if self.py<0:  self.py=0
                 if self.py>=tey:
                     self.mort=True
                     self.vie=0
-                if self.px<=-tex or self.px>=tex*2: self.mort=True
+                if self.px+self.tx<=0 or self.px>=tex: self.mort=True
                 if self.py<=-1.0*tey: self.mort=True
+                #collisions
                 self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
                 for m in mape:
                     if self.rect.colliderect(m.rect):
@@ -710,46 +748,49 @@ def main_jeu(nbpersos,modejeu,vies):
     modejeu=0
     tpartie=8.*60.
     msgkills=[]
+    pygame.mixer.music.load('musics/TheLoomingBattle.OGG')
+    pygame.mixer.music.play(-1)
     #0=nom tueur 1=nom tué 2=tps mis ce message 3=duree message
     while encour:
         t1=time.time()
         bts=aff_jeu(pause,persos,mape,cam,fondmape,fps,tpartie,modejeu,msgkills)
-        verif_keys(persos)
-        bot(persos)
-        for p in persos:
-            p.update(mape,persos)
-        for p in persos:
-            if p.mort:
-                if p.dtch!=None and time.time()-p.dtpdtch<=10:
-                    if modejeu==0: p.dtch.points+=2
-                    msgkills.append( [p.dtch,p,time.time(),1.5] )
-                else:
-                    if modejeu==0: p.points-=2
-                    msgkills.append( [p,p,time.time(),1.5] )
-                if modejeu==0: p.points-=1
-                elif modejeu==1: p.vies-=1
-                if modejeu != 1 or p.vies > 0:
-                    sp=random.choice(spawnpoints)
-                    p.vie=p.vie_tot
-                    p.isenlair=True
-                    p.inv=True
-                    p.dinv=time.time()
-                    p.px=sp[0]
-                    p.py=sp[1]
-                    p.dtch=None
-                    p.mort=False
-                    p.vitx=0
-                    p.vity=0
-        cx,cy=0,0
-        for p in persos:
-            cx+=p.px
-            cy+=p.py
-        cx=int(cx/len(persos))
-        cy=int(cy/len(persos))
-        cam=[-cx+tex/2,-cy+tey/2]
-        cam=[0,0]
-        for m in msgkills:
-            if time.time()-m[2]>=m[3] and m in msgkills: del(msgkills[msgkills.index(m)])
+        if not pause:
+            verif_keys(persos)
+            bot(persos)
+            for p in persos:
+                p.update(mape,persos)
+            for p in persos:
+                if p.mort:
+                    if p.dtch!=None and time.time()-p.dtpdtch<=10:
+                        if modejeu==0: p.dtch.points+=2
+                        msgkills.append( [p.dtch,p,time.time(),1.5] )
+                    else:
+                        if modejeu==0: p.points-=2
+                        msgkills.append( [p,p,time.time(),1.5] )
+                    if modejeu==0: p.points-=1
+                    elif modejeu==1: p.vies-=1
+                    if modejeu != 1 or p.vies > 0:
+                        sp=random.choice(spawnpoints)
+                        p.vie=p.vie_tot
+                        p.isenlair=True
+                        p.inv=True
+                        p.dinv=time.time()
+                        p.px=sp[0]
+                        p.py=sp[1]
+                        p.dtch=None
+                        p.mort=False
+                        p.vitx=0
+                        p.vity=0
+            cx,cy=0,0
+            for p in persos:
+                cx+=p.px
+                cy+=p.py
+            cx=int(cx/len(persos))
+            cy=int(cy/len(persos))
+            cam=[-cx+tex/2,-cy+tey/2]
+            cam=[0,0]
+            for m in msgkills:
+                if time.time()-m[2]>=m[3] and m in msgkills: del(msgkills[msgkills.index(m)])
         for event in pygame.event.get():
             if event.type==QUIT: exit()
             elif event.type==KEYDOWN:
@@ -775,7 +816,7 @@ def main_jeu(nbpersos,modejeu,vies):
             for p in persos:
                 if p.vies>0: nbvie+=1
             if nbvie<=1: encour=False
-    fenetre.fill((50,15,185))
+    fenetre.fill((50,105,225))
     classement=[]
     for g in range(len(persos)):
         lpp=random.choice(persos)
@@ -789,6 +830,8 @@ def main_jeu(nbpersos,modejeu,vies):
     for p in classement:
         fenetre.blit( p.imgs[14][0] , [xx,yy])
         fenetre.blit( font1.render(str(classement.index(p)+1)+" : "+p.nom,20,(0,0,0)) , [xx,yy+tyb+ry(5)])
+        if modejeu==0: fenetre.blit( font1.render(str(p.points),20,(0,0,0)) , [xx+int(txb/3),yy+tyb+ry(25)])
+        elif modejeu==1: fenetre.blit( font1.render(str(p.vies),20,(0,0,0)) , [xx+int(txb/3),yy+tyb+ry(25)])
         xx+=txb+rx(50)
     fenetre.blit( font3.render("press space to continue",20,(0,0,0)) , [rx(100),ry(900)])
     pygame.display.update()
@@ -813,12 +856,40 @@ def main_jeu(nbpersos,modejeu,vies):
 
 
 def aff_menu(menu):
+    pos=pygame.mouse.get_pos()
     bts=[]
     for x in range(6): bts.append(None)
     fenetre.fill((0,0,0))
+    pygame.draw.rect(fenetre,(50,50,50),(0,0,rx(200),tey),0)
+    #bouton 1
+    b1=pygame.Rect(rx(15),ry(10),rx(150),ry(75))
+    if menu==0: cl=(200,200,0)
+    elif b1.collidepoint(pos): cl=(200,150,50)
+    else: cl=(100,100,50)
+    bts[0]=pygame.draw.rect(fenetre,cl,b1,0)
+    #bouton 2
+    b2=pygame.Rect(rx(15),ry(105),rx(150),ry(75))
+    if menu==1: cl=(200,200,0)
+    elif b2.collidepoint(pos): cl=(200,150,50)
+    else: cl=(100,100,50)
+    bts[1]=pygame.draw.rect(fenetre,cl,b2,0)
+    #bouton 3
+    b3=pygame.Rect(rx(15),ry(205),rx(150),ry(75))
+    if menu==2: cl=(200,200,0)
+    elif b3.collidepoint(pos): cl=(200,150,50)
+    else: cl=(100,100,50)
+    bts[2]=pygame.draw.rect(fenetre,cl,b3,0)
+    #bouton 4
+    b4=pygame.Rect(rx(15),ry(305),rx(150),ry(75))
+    if menu==3: cl=(200,200,0)
+    elif b4.collidepoint(pos): cl=(200,150,50)
+    else: cl=(100,100,50)
+    bts[3]=pygame.draw.rect(fenetre,cl,b4,0)
+    #menus
     if menu==0:
         pass
-    elif menu==1: pass
+    elif menu==1:
+        pass
     pygame.display.update()
     return bts
 
@@ -826,21 +897,29 @@ def aff_menu(menu):
 
 
 def main():
+    nbp=2
+    modejeu=1
+    vies=3
     bts=[]
     menu=0
     encoure=True
     while encoure:
         pos=pygame.mouse.get_pos()
         bts=aff_menu(menu)
-        for event in pygame.event.get:
+        for event in pygame.event.get():
             if event.type==QUIT: exit()
             elif event.type==KEYDOWN:
                 if event.key==K_ESCAPE: encoure=False
             elif event.type==MOUSEBUTTONUP:
-                pass
+                for b in bts:
+                    if b!=None and b.collidepoint(pos):
+                        di=bts.index(b)
+                        if di==0:
+                            main_jeu(nbp,modejeu,vies)
+                        elif di==1: menu=1
+                        elif di==2: menu=2
+                        elif di==3: menu=3
 
-nbp=4
-modejeu=0
-vies=3
-main_jeu(nbp,modejeu,vies)
+
+main()
 
