@@ -181,6 +181,15 @@ class Arme:
                             ef=random.choice(hitsounds)
                             ef.play()
                         except: pass
+                    if touche and not p.isesquive and not p.inv:
+                        if self.pos.issenshaut and not self.pos.issensgauche and not self.pos.issensdroite: p.img=p.imgs[17][0]
+                        elif self.pos.issensbas and not self.pos.issensgauche and not self.pos.issensdroite: p.img=p.imgs[18][0]
+                        elif self.pos.issensgauche and not self.pos.issenshaut and not self.pos.issensbas: p.img=p.imgs[19][0]
+                        elif self.pos.issensdroite and not self.pos.issenshaut and not self.pos.issensbas: p.img=p.imgs[20][0]
+                        elif self.pos.issenshaut and self.pos.issensgauche and not self.pos.issensdroite: p.img=p.imgs[21][0]
+                        elif self.pos.issenshaut and not self.pos.issensgauche and self.pos.issensdroite: p.img=p.imgs[22][0]
+                        elif self.pos.issensbas and self.pos.issensgauche and not self.pos.issensdroite: p.img=p.imgs[23][0]
+                        elif self.pos.issensbas and not self.pos.issensgauche and self.pos.issensdroite: p.img=p.imgs[24][0]
                     
         
 
@@ -194,7 +203,7 @@ prss.append(["stickman4","p4",5000,2,5,0.8,10,3,2,0,0])
 
 def load_imgs(nim):
     imgs=[]
-    for x in range(17): imgs.append([])
+    for x in range(25): imgs.append([])
     for x in range(1,4): imgs[0].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-idle-"+str(x)+".png") , [txb,tyb] ) )
     for x in range(1,4): imgs[1].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-move_right-"+str(x)+".png") , [txb,tyb] ) )
     for x in range(1,4): imgs[2].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-move_left-"+str(x)+".png") , [txb,tyb] ) )
@@ -212,6 +221,14 @@ def load_imgs(nim):
     imgs[14].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-icon.png") , [txb,tyb] ) )
     imgs[15].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-side_mur-left.png") , [txb,tyb] ) )
     imgs[16].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-side_mur-right.png") , [txb,tyb] ) )
+    imgs[17].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-up.png") , [txb,tyb] ) )
+    imgs[18].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-down.png") , [txb,tyb] ) )
+    imgs[19].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-left.png") , [txb,tyb] ) )
+    imgs[20].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-right.png") , [txb,tyb] ) )
+    imgs[21].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-up-left.png") , [txb,tyb] ) )
+    imgs[22].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-up-right.png") , [txb,tyb] ) )
+    imgs[23].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-down-left.png") , [txb,tyb] ) )
+    imgs[24].append( pygame.transform.scale(pygame.image.load(dimp+nim+"/"+nim+"-coup-down-right.png") , [txb,tyb] ) )
     #0=idle 1=move droite 2=move gauche 3=sauter 4=accroupis 5=att leg droite 6=att leg gauche 7=att leg bas droite 8=att leg bas gauche
     #9=att leg haut droite 10=att leg haut gauche 11=att leg bas 12=att leg haut 13=esquive 14=icon 15=mur cote gauche 16=mur cote droit
     return imgs
@@ -407,10 +424,10 @@ class Perso:
             #verification de isimobile
             if self.isimobil and time.time()-self.dimobil >= self.timobil: self.isimobil=False
             #animation
-            if time.time()-self.dan>=self.tan:
+            if time.time()-self.dan>=self.tan and not self.isimobil:
                 self.dan=time.time()
                 if self.an<len(self.anim)-1: self.an+=1
-                if self.an>=len(self.anim)-1 and not self.isacroupi and not self.isenlair and not self.isesquive:
+                if self.an>=len(self.anim)-1 and not self.isacroupi and not self.isesquive:
                     self.an=0
                     if self.anim not in [self.imgs[15],self.imgs[16]]: self.anim=self.imgs[0]
                 if self.an < len(self.anim):
@@ -436,7 +453,7 @@ class Perso:
                 if self.py>=tey:
                     self.mort=True
                     self.vie=0
-                if self.px+self.tx<=0 or self.px>=tex: self.mort=True
+                if self.px+self.tx<=0 or self.px>=tex and self.vie<=self.vie_tot/2: self.mort=True
                 if self.py<=-1.0*tey: self.mort=True
                 #collisions
                 self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
@@ -719,6 +736,7 @@ def verif_keys_client(keys):
     return ks
 
 def main_jeu(nbpersos,modejeu,vies):
+    modejeu=1
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     persos=[]
     k=[]
