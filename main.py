@@ -77,9 +77,9 @@ class Mape:
         self.ty=ty
         self.cl=cl
         self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
-        self.recthaut=pygame.Rect(self.px+self.tx*0.01,self.py,self.tx*0.98,self.ty*0.01)
-        self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.1,self.tx*0.01,self.ty*0.9)
-        self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.1,self.tx*0.01,self.ty*0.9)
+        self.recthaut=pygame.Rect(self.px,self.py,self.tx,self.ty*0.01)
+        self.rectgauche=pygame.Rect(self.px,self.py+self.ty*0.05,self.tx*0.01,self.ty*0.90)
+        self.rectdroite=pygame.Rect(self.px+self.tx*0.99,self.py+self.ty*0.05,self.tx*0.01,self.ty*0.90)
         self.rectbas=pygame.Rect(self.px+self.tx*0.05,self.py+self.ty*0.99,self.tx*0.9,self.ty*0.01)
         
 xt=int(txb/2)
@@ -463,12 +463,15 @@ class Perso:
                         if not self.rect.colliderect(m.rectbas):
                             if self.rect.colliderect(m.recthaut):
                                 self.py-=self.vity
+                                self.vity=0
                                 h=False
                             if self.rect.colliderect(m.rectgauche):
                                 self.px-=self.vitx
+                                self.vitx=0
                                 if h: self.anim,self.an=self.imgs[15],0
                             if self.rect.colliderect(m.rectdroite):
                                 self.px-=self.vitx
+                                self.vitx=0
                                 if h: self.anim,self.an=self.imgs[16],0
                             self.nbsaut=self.nbsaut_tot
                             self.isenlair=False   
