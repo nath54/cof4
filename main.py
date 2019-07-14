@@ -561,15 +561,23 @@ def verif_keys(persos):
                     #sauter
                     if mon_joystick.get_button(0)==1:
                         p.sauter()
-                    if mon_joystick.get_button(4)==1 or mon_joystick.get_button(5)==1:
+                    #esquiver
+                    aa=float(mon_joystick.get_axis(2))
+                    if aa > 0: aa=1
+                    elif aa < -0.5 : aa=-1
+                    else: aa=0
+                    if aa != 0:
                         p.esquive()
                         isesq=True
+                    #attaque légère
                     if mon_joystick.get_button(2)==1:
                         p.attaque_legere(persos)
                         isatt=True
+                    #attaque lourde
                     if mon_joystick.get_button(1)==1:
                         p.attaque_lourde(persos)
                         isatt=True
+                    #bouger
                     if not isatt and not isesq:
                         #haut-bas
                         aa=float(mon_joystick.get_axis(1))
@@ -608,8 +616,9 @@ def bot(persos):
                 if p.py+p.ty/2>pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=-1
                 if p.py+p.ty/2<pp.py+pp.ty/2 and abs((p.py+p.ty/2)-(pp.py+pp.ty/2)) > 60: bgv=1
                 if (time.time()-pp.arme_actu.datt_leg<=0.5) or (time.time()-pp.arme_actu.datt_lourd<=0.5): esquive=1
-                if time.time()-p.arme_actu.datt_leg>=p.arme_actu.tatt_leg and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=1
-                if time.time()-p.arme_actu.datt_lourd>=p.arme_actu.tatt_lourd and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=2
+                if random.randint(1,10)==1: att=random.choice([1,2])
+#                if time.time()-p.arme_actu.datt_leg>=p.arme_actu.tatt_leg and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=1
+ #               if time.time()-p.arme_actu.datt_lourd>=p.arme_actu.tatt_lourd and dist([p.px,p.py],[pp.px,pp.py]) <= 100: att=2
                 if att==0:
                     if bgv==-1: p.sauter()
                     if bgv==1: p.bouger("down")
@@ -739,7 +748,6 @@ def verif_keys_client(keys):
     return ks
 
 def main_jeu(nbpersos,modejeu,vies):
-    modejeu=1
     spawnpoints=[[rx(100),ry(50)],[rx(200),ry(50)],[rx(300),ry(50)],[rx(400),ry(50)],[rx(500),ry(50)],[rx(600),ry(50)]]
     persos=[]
     k=[]
@@ -748,7 +756,7 @@ def main_jeu(nbpersos,modejeu,vies):
     k.append(None)
     k.append(None)
     k.append(None)
-    bt=[False,False,True,True]
+    bt=[False,True,True,True]
     for x in range(nbpersos):
         sp=random.choice(spawnpoints)
         if sp in spawnpoints: del(spawnpoints[spawnpoints.index(sp)])
@@ -766,7 +774,6 @@ def main_jeu(nbpersos,modejeu,vies):
     fondmape=random.choice(fondmapes)
     bts=[]
     fps=0
-    modejeu=0
     tpartie=8.*60.
     msgkills=[]
     pygame.mixer.music.load('musics/TheLoomingBattle.OGG')
@@ -837,6 +844,7 @@ def main_jeu(nbpersos,modejeu,vies):
             for p in persos:
                 if p.vies>0: nbvie+=1
             if nbvie<=1: encour=False
+    pygame.mixer.music.stop()
     fenetre.fill((50,105,225))
     classement=[]
     for g in range(len(persos)):
@@ -863,15 +871,6 @@ def main_jeu(nbpersos,modejeu,vies):
             elif event.type==KEYDOWN:
                 if event.key==K_SPACE:
                     encour2=False
-
-
-
-
-
-
-
-
-
 
 
 
